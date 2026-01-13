@@ -1,0 +1,378 @@
+
+-- =============================================================================
+-- SCRIPT DE RESTAURACIÓN DE BASE DE DATOS - DMD ASESORES
+-- =============================================================================
+-- Instrucciones:
+-- 1. Ve a tu proyecto en Supabase: https://supabase.com/dashboard
+-- 2. Entra en el "SQL Editor" (icono de la hoja con código en la barra lateral).
+-- 3. Crea una "New Query".
+-- 4. Copia y pega TODO el contenido de este archivo y dale a "Run".
+-- =============================================================================
+
+-- 1. CONFIGURACIÓN INICIAL Y LIMPIEZA (Opcional, si quieres empezar de cero)
+-- DROP TABLE IF EXISTS products, ai_conversations, templates, contact_submissions, testimonials, client_logos, team_members, profiles, app_config CASCADE;
+
+-- 2. TABLA DE PERFILES (Profiles)
+-- Se vincula automáticamente con auth.users
+create table if not exists public.profiles (
+  id uuid not null references auth.users on delete cascade primary key,
+  full_name text,
+  company text,
+  contact_number text,
+  role text default 'VISITOR' check (role in ('ADMINISTRATOR', 'EDITOR', 'VISITOR')),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Habilitar RLS
+alter table public.profiles enable row level security;
+
+-- Políticas de Perfiles
+drop policy if exists "Perfiles son visibles por el dueño y administradores" on public.profiles;
+create policy "Perfiles son visibles por el dueño y administradores"
+  on public.profiles for select
+  using ( auth.uid() = id or exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMINISTRATOR', 'EDITOR')) );
+
+drop policy if exists "Usuarios pueden actualizar su propio perfil" on public.profiles;
+create policy "Usuarios pueden actualizar su propio perfil"
+  on public.profiles for update
+  using ( auth.uid() = id );
+
+-- 3. TRIGGER PARA CREACIÓN AUTOMÁTICA DE PERFIL
+-- Esta función se ejecuta cada vez que alguien se registra en Auth
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, full_name, company, contact_number, role)
+  values (
+    new.id,
+    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'company',
+    new.raw_user_meta_data->>'contact_number',
+    coalesce(new.raw_user_meta_data->>'role', 'VISITOR') -- Por defecto VISITOR
+  );
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Trigger
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+-- 4. CONFIGURACIÓN DE LA APLICACIÓN (LEGACY - Mantenido por compatibilidad)
+create table if not exists public.app_config (
+  key text primary key,
+  value text,
+  updated_at timestamptz default now()
+);
+alter table public.app_config enable row level security;
+
+drop policy if exists "Cualquiera lee config" on public.app_config;
+create policy "Cualquiera lee config" on public.app_config for select using (true);
+
+drop policy if exists "Admin gestiona config" on public.app_config;
+create policy "Admin gestiona config" on public.app_config for all using (
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMINISTRATOR', 'EDITOR'))
+);
+
+-- 4.1 BASE DE CONOCIMIENTO MODULAR (NUEVO)
+create table if not exists public.ai_knowledge_base (
+  id uuid default gen_random_uuid() primary key,
+  title text not null,
+  content text not null,
+  is_active boolean default true,
+  created_at timestamptz default now()
+);
+alter table public.ai_knowledge_base enable row level security;
+
+drop policy if exists "Lectura de base de conocimiento" on public.ai_knowledge_base;
+create policy "Lectura de base de conocimiento" on public.ai_knowledge_base for select using (true);
+
+drop policy if exists "Admin gestiona base de conocimiento" on public.ai_knowledge_base;
+create policy "Admin gestiona base de conocimiento" on public.ai_knowledge_base for all using (
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMINISTRATOR', 'EDITOR'))
+);
+
+
+-- 5. CONTENIDO PÚBLICO (Landing Page)
+
+-- Miembros del Equipo
+create table if not exists public.team_members (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  title text not null,
+  image_url text not null,
+  display_order int default 0,
+  created_at timestamptz default now()
+);
+alter table public.team_members enable row level security;
+drop policy if exists "Lectura pública team_members" on public.team_members;
+create policy "Lectura pública team_members" on public.team_members for select using (true);
+drop policy if exists "Admin gestiona team_members" on public.team_members;
+create policy "Admin gestiona team_members" on public.team_members for all using (
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMINISTRATOR', 'EDITOR'))
+);
+
+-- Logos de Clientes
+create table if not exists public.client_logos (
+  id uuid default gen_random_uuid() primary key,
+  alt_text text not null,
+  logo_url text not null,
+  display_order int default 0,
+  created_at timestamptz default now()
+);
+alter table public.client_logos enable row level security;
+drop policy if exists "Lectura pública client_logos" on public.client_logos;
+create policy "Lectura pública client_logos" on public.client_logos for select using (true);
+drop policy if exists "Admin gestiona client_logos" on public.client_logos;
+create policy "Admin gestiona client_logos" on public.client_logos for all using (
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMINISTRATOR', 'EDITOR'))
+);
+
+-- Testimonios
+create table if not exists public.testimonials (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  company text not null,
+  quote text not null,
+  image_url text not null,
+  display_order int default 0,
+  created_at timestamptz default now()
+);
+alter table public.testimonials enable row level security;
+drop policy if exists "Lectura pública testimonials" on public.testimonials;
+create policy "Lectura pública testimonials" on public.testimonials for select using (true);
+drop policy if exists "Admin gestiona testimonials" on public.testimonials;
+create policy "Admin gestiona testimonials" on public.testimonials for all using (
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMINISTRATOR', 'EDITOR'))
+);
+
+-- Contacto (Formulario)
+create table if not exists public.contact_submissions (
+  id uuid default gen_random_uuid() primary key,
+  name text,
+  email text,
+  interest text,
+  message text,
+  created_at timestamptz default now()
+);
+alter table public.contact_submissions enable row level security;
+drop policy if exists "Cualquiera puede insertar contacto" on public.contact_submissions;
+create policy "Cualquiera puede insertar contacto" on public.contact_submissions for insert with check (true);
+drop policy if exists "Solo admin ve contactos" on public.contact_submissions;
+create policy "Solo admin ve contactos" on public.contact_submissions for select using (
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMINISTRATOR', 'EDITOR'))
+);
+
+-- 6. RECURSOS DEL SISTEMA
+
+-- Plantillas
+create table if not exists public.templates (
+  id uuid default gen_random_uuid() primary key,
+  title text not null,
+  description text,
+  software text, -- Contapyme, Agrowin, General
+  type text,     -- Inventario, Terceros, etc.
+  youtube_video_id text,
+  download_url text,
+  cover_image_url text,
+  support_images text[], -- Array de URLs
+  created_at timestamptz default now()
+);
+alter table public.templates enable row level security;
+-- Permitir lectura a usuarios autenticados (clientes)
+drop policy if exists "Usuarios autenticados ven plantillas" on public.templates;
+create policy "Usuarios autenticados ven plantillas" on public.templates for select using (auth.role() = 'authenticated');
+drop policy if exists "Admin gestiona plantillas" on public.templates;
+create policy "Admin gestiona plantillas" on public.templates for all using (
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMINISTRATOR', 'EDITOR'))
+);
+
+-- Productos
+create table if not exists public.products (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  description text,
+  price numeric,
+  image_url text,
+  created_at timestamptz default now()
+);
+alter table public.products enable row level security;
+drop policy if exists "Lectura pública productos" on public.products;
+create policy "Lectura pública productos" on public.products for select using (true);
+drop policy if exists "Admin gestiona productos" on public.products;
+create policy "Admin gestiona productos" on public.products for all using (
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMINISTRATOR', 'EDITOR'))
+);
+
+-- 7. INTELIGENCIA ARTIFICIAL
+
+-- Conversaciones IA
+create table if not exists public.ai_conversations (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  messages jsonb default '[]'::jsonb,
+  status text default 'active', -- active, closed
+  rating int,
+  feedback text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+alter table public.ai_conversations enable row level security;
+
+drop policy if exists "Usuarios ven sus propias conversaciones" on public.ai_conversations;
+create policy "Usuarios ven sus propias conversaciones" on public.ai_conversations for select using (auth.uid() = user_id);
+drop policy if exists "Usuarios crean conversaciones" on public.ai_conversations;
+create policy "Usuarios crean conversaciones" on public.ai_conversations for insert with check (auth.uid() = user_id);
+drop policy if exists "Usuarios actualizan sus conversaciones" on public.ai_conversations;
+create policy "Usuarios actualizan sus conversaciones" on public.ai_conversations for update using (auth.uid() = user_id);
+
+-- Permitir a los administradores ver todas las conversaciones (para soporte y calidad)
+drop policy if exists "Admin ve todas las conversaciones" on public.ai_conversations;
+create policy "Admin ve todas las conversaciones" on public.ai_conversations for select using (
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMINISTRATOR', 'EDITOR'))
+);
+drop policy if exists "Admin borra conversaciones" on public.ai_conversations;
+create policy "Admin borra conversaciones" on public.ai_conversations for delete using (
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMINISTRATOR', 'EDITOR'))
+);
+
+-- 8. FUNCIONES RPC (Remote Procedure Calls) REQUERIDAS POR LA APP
+
+-- Obtener todos los usuarios (UserManager.tsx)
+-- Requiere security definer para acceder a auth.users
+create or replace function public.get_all_users()
+returns table (
+  id uuid,
+  email varchar,
+  full_name text,
+  company text,
+  contact_number text,
+  role text
+)
+language plpgsql security definer
+as $$
+begin
+  if not exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMINISTRATOR', 'EDITOR')) then
+    raise exception 'Access denied';
+  end if;
+
+  return query
+  select
+    au.id,
+    au.email::varchar,
+    p.full_name,
+    p.company,
+    p.contact_number,
+    p.role
+  from auth.users au
+  join public.profiles p on p.id = au.id;
+end;
+$$;
+
+-- Obtener conversaciones calificadas (RatingsViewer.tsx)
+create or replace function public.get_rated_conversations()
+returns table (
+  id uuid,
+  created_at timestamptz,
+  rating int,
+  feedback text,
+  full_name text,
+  email varchar
+)
+language plpgsql security definer
+as $$
+begin
+  if not exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMINISTRATOR', 'EDITOR')) then
+    raise exception 'Access denied';
+  end if;
+
+  return query
+  select
+    c.id,
+    c.created_at,
+    c.rating,
+    c.feedback,
+    p.full_name,
+    au.email::varchar
+  from public.ai_conversations c
+  join public.profiles p on p.id = c.user_id
+  join auth.users au on au.id = c.user_id
+  where c.rating is not null
+  order by c.created_at desc;
+end;
+$$;
+
+-- Contar conversaciones calificadas (AIManager.tsx)
+create or replace function public.count_rated_conversations()
+returns int
+language plpgsql security definer
+as $$
+begin
+  if not exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMINISTRATOR', 'EDITOR')) then
+    raise exception 'Access denied';
+  end if;
+  return (select count(*) from public.ai_conversations where rating is not null);
+end;
+$$;
+
+-- 9. STORAGE (Almacenamiento)
+-- Nota: Los buckets deben crearse en la pestaña 'Storage' de Supabase,
+-- pero las políticas se pueden definir aquí.
+
+-- Asegurarse de que exista el bucket 'public_assets'
+insert into storage.buckets (id, name, public) 
+values ('public_assets', 'public_assets', true)
+on conflict (id) do nothing;
+
+-- Políticas Storage public_assets
+drop policy if exists "Cualquiera puede ver public_assets" on storage.objects;
+create policy "Cualquiera puede ver public_assets"
+on storage.objects for select
+using ( bucket_id = 'public_assets' );
+
+drop policy if exists "Solo admin sube a public_assets" on storage.objects;
+create policy "Solo admin sube a public_assets"
+on storage.objects for insert
+with check (
+  bucket_id = 'public_assets' and
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMINISTRATOR', 'EDITOR'))
+);
+
+drop policy if exists "Solo admin borra de public_assets" on storage.objects;
+create policy "Solo admin borra de public_assets"
+on storage.objects for delete
+using (
+  bucket_id = 'public_assets' and
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMINISTRATOR', 'EDITOR'))
+);
+
+-- Asegurarse de que exista el bucket 'template_files'
+insert into storage.buckets (id, name, public) 
+values ('template_files', 'template_files', true)
+on conflict (id) do nothing;
+
+drop policy if exists "Cualquiera autenticado ve template_files" on storage.objects;
+create policy "Cualquiera autenticado ve template_files"
+on storage.objects for select
+using ( bucket_id = 'template_files' and auth.role() = 'authenticated' );
+
+drop policy if exists "Solo admin sube a template_files" on storage.objects;
+create policy "Solo admin sube a template_files"
+on storage.objects for insert
+with check (
+  bucket_id = 'template_files' and
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMINISTRATOR', 'EDITOR'))
+);
+
+drop policy if exists "Solo admin borra de template_files" on storage.objects;
+create policy "Solo admin borra de template_files"
+on storage.objects for delete
+using (
+  bucket_id = 'template_files' and
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMINISTRATOR', 'EDITOR'))
+);
+
+-- FIN DEL SCRIPT

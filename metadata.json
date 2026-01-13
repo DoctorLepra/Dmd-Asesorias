@@ -1,0 +1,7 @@
+{
+  "name": "new branding dmd",
+  "description": "Sitio web para DMD Asesores, una empresa de consultoría de software contable especializada en Contapyme y Agrowin. Ofrece un portal para clientes con soporte de IA, tickets y documentación.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
