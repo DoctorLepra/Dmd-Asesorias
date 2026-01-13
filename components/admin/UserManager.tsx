@@ -85,8 +85,9 @@ const UserManager: React.FC = () => {
         setIsDeleting(true);
 
         try {
-            const response = await fetch('/.netlify/functions/delete-user', {
+            const response = await fetch('/api/delete-user', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: userToDelete.id }),
             });
             if (!response.ok) {

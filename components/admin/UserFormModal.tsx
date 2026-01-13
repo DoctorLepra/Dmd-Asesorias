@@ -65,8 +65,9 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ userToEdit, onClose, onSa
         contactNumber: formData.contactNumber,
       };
 
-      const response = await fetch('/.netlify/functions/create-update-user', {
+      const response = await fetch('/api/create-update-user', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 

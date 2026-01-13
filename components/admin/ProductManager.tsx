@@ -54,9 +54,10 @@ const ProductFormModal: React.FC<{
       let finalImageUrl = imageUrl;
 
       if (imageFile) {
-        // Step 1: Get the signed URL from our Netlify function
-        const uploadResponse = await fetch('/.netlify/functions/generate-upload-url', {
+        // Step 1: Get the signed URL from our Vercel function
+        const uploadResponse = await fetch('/api/generate-upload-url', {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ fileName: imageFile.name, contentType: imageFile.type }),
         });
         
@@ -177,7 +178,7 @@ const ProductManager: React.FC = () => {
       alert(`Error al eliminar: ${error.message}`);
     } else {
       // NOTE: You might want to delete the image from R2 here as well.
-      // This requires another Netlify function for security.
+      // This requires another Vercel function for security.
     }
     
     setIsDeleting(false);
