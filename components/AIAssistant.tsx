@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { geminiService } from '../services/geminiService.ts';
 import { marked } from 'marked';
@@ -424,6 +422,8 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ profile }) => {
     setAttachedImage(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
     
+    // Create a local copy of messages with the user's message appended
+    // This is crucial for saving the correct state later
     let conversationWithUserMsg = {
         ...activeConversation,
         messages: [...activeConversation.messages, userMessage],
@@ -431,6 +431,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ profile }) => {
 
     let currentId = activeConversation.id;
 
+    // First save: Persist the user message
     if (currentId === 'new') {
         const newId = await saveConversation(conversationWithUserMsg.messages, 'new');
         if (newId) {
@@ -441,8 +442,11 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ profile }) => {
             setChatLoading(false);
             return; // Stop if saving failed
         }
+    } else {
+        await saveConversation(conversationWithUserMsg.messages, currentId);
     }
     
+    // Optimistic UI update: Add user message + Thinking placeholder
     const thinkingMessage: Message = { sender: 'ai', text: 'Pensando...', isPartial: true };
     const conversationWithThinking = {
         ...conversationWithUserMsg,
@@ -467,18 +471,19 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ profile }) => {
             });
         }
 
-        let finalConversation: Conversation | null = null;
-        setActiveConversation((prev: Conversation | null) => {
-            if (!prev) return null;
-            const newMessages = [...prev.messages];
-            newMessages[newMessages.length - 1].isPartial = false;
-            finalConversation = { ...prev, messages: newMessages };
-            return finalConversation;
-        });
+        // Final save: Persist the complete conversation with AI response
+        // Use the local messages copy + full response to ensure correctness
+        const finalMessages: Message[] = [
+            ...conversationWithUserMsg.messages,
+            { sender: 'ai', text: fullResponse, isPartial: false }
+        ];
 
-        if (finalConversation) {
-            await saveConversation((finalConversation as Conversation).messages, currentId);
-        }
+        // Update UI to final state
+        setActiveConversation((prev) => prev ? { ...prev, messages: finalMessages } : null);
+
+        // Save to DB
+        await saveConversation(finalMessages, currentId);
+
     } catch (error) {
         console.error("Error streaming response:", error);
         setActiveConversation((prev: Conversation | null) => {
@@ -698,27 +703,27 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ profile }) => {
         <ul className="space-y-3">
           {conversations.length > 0 ? conversations.map(convo => (
             <li key={convo.id}>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full">
                   <button 
                       onClick={() => handleSelectConversation(convo)} 
-                      className="flex-grow text-left p-4 bg-white rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-[#212147] transition-colors duration-200"
+                      className="flex-grow text-left p-4 bg-white rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-[#212147] transition-colors duration-200 min-w-0 shadow-sm"
                   >
-                      <div className="flex justify-between items-center">
-                          <p className="font-semibold text-slate-800 truncate pr-4">
+                      <div className="flex justify-between items-center mb-1">
+                          <p className="font-semibold text-slate-800 truncate pr-4 flex-1 min-w-0">
                               {convo.messages.find(m => m.sender === 'user')?.text || 'Chat iniciado'}
                           </p>
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${convo.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-slate-200 text-slate-600'}`}>
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${convo.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-slate-200 text-slate-600'}`}>
                               {convo.status === 'active' ? 'Activo' : 'Cerrado'}
                           </span>
                       </div>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-slate-500 mt-1 truncate">
                           Última actividad: {new Date(convo.updated_at).toLocaleString()}
                       </p>
                   </button>
                   {convo.status === 'closed' && (
                       <button
                           onClick={(e) => { e.stopPropagation(); handleOpenDeleteConfirm(convo); }}
-                          className="p-3 text-red-500 bg-white border border-slate-200 rounded-lg hover:bg-red-50 hover:border-red-500 transition-colors"
+                          className="flex-shrink-0 p-3 text-red-500 bg-white border border-slate-200 rounded-lg hover:bg-red-50 hover:border-red-500 transition-colors shadow-sm"
                           aria-label={`Eliminar conversación "${convo.messages.find(m => m.sender === 'user')?.text || 'Chat'}"`}
                       >
                           <span className="material-symbols-outlined">delete</span>
