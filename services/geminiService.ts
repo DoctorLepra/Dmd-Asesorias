@@ -9,12 +9,12 @@ let aiInstance: GoogleGenAI | null = null;
 const getAI = (): GoogleGenAI => {
   if (aiInstance) return aiInstance;
 
-  // Accedemos a la variable de entorno aquí, no en el nivel superior
+  // Accedemos a la variable de entorno inyectada por Vite
   const apiKey = process.env.API_KEY;
 
   if (!apiKey) {
-    console.error("API_KEY no está configurada en las variables de entorno.");
-    throw new Error("La configuración de API Key falta. Contacte al administrador.");
+    console.error("[Gemini Service] API_KEY faltante. Asegúrese de configurarla en Vercel Settings > Environment Variables.");
+    throw new Error("Falta la configuración de API Key. Si eres el administrador, configura 'API_KEY' en el panel de Vercel y haz Redeploy.");
   }
 
   aiInstance = new GoogleGenAI({ apiKey });
@@ -94,7 +94,7 @@ const getSolution = async (problemDescription: string, image?: ImageInput): Prom
   } catch (error: any) {
     console.error("Error generating solution:", error);
     if (error.message.includes("API Key")) {
-        return "Error de configuración del sistema: Falta la API Key. Por favor contacte soporte.";
+        return error.message;
     }
     return "Lo sentimos, ha ocurrido un error al intentar generar una solución. Por favor, inténtalo de nuevo más tarde. Si el problema persiste, puedes contactar a nuestro equipo de soporte. [SUPPORT_BUTTON]";
   }
@@ -130,9 +130,13 @@ async function* getSolutionStream(problemDescription: string, image?: ImageInput
         yield chunk.text;
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error generating streaming solution:", error);
-    yield "Lo sentimos, ha ocurrido un error técnico (posiblemente falta de API Key o conexión).";
+    if (error.message.includes("API Key")) {
+        yield "Error crítico: Falta la API Key en la configuración del servidor.";
+    } else {
+        yield "Lo sentimos, ha ocurrido un error técnico.";
+    }
   }
 }
 

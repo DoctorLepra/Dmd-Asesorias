@@ -26,7 +26,7 @@ export interface Profile {
 // Cambia 'enable' a TRUE para saltar el login y entrar directo.
 // Cambia 'role' para probar diferentes vistas: 'ADMINISTRATOR', 'VISITOR', 'EDITOR'
 const DEV_MODE = {
-  enable: true, 
+  enable: false, 
   profile: {
     id: 'dev-user-id',
     full_name: 'Desarrollador (Modo Prueba)',
