@@ -10,7 +10,7 @@ const ConfirmationPage: React.FC = () => {
           Un momento por favor, estamos confirmando tu registro. Serás redirigido automáticamente en unos segundos.
         </p>
         <div className="flex justify-center items-center pt-4">
-          <div className="w-8 h-8 border-4 border-dashed rounded-full animate-spin border-[#212147]"></div>
+          <span className="material-symbols-outlined animate-spin text-4xl text-[#212147]">progress_activity</span>
         </div>
       </div>
     </div>

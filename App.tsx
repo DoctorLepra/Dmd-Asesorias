@@ -168,7 +168,8 @@ const App: React.FC = () => {
       return <ConfirmationPage />;
     }
     if (session && profile) {
-      return <Intranet profile={profile} />;
+      // Pasamos handleLogout para que la Intranet pueda tener su propio botón de salir
+      return <Intranet profile={profile} onLogout={handleLogout} />;
     }
     switch (view) {
       case 'auth':
@@ -183,6 +184,10 @@ const App: React.FC = () => {
     }
   };
 
+  // Determine if we are in a "Public View" (Landing, About, Services) vs "Private/Auth View"
+  // The Navbar and Footer should only appear in the Public View.
+  const isPublicView = !session && !isConfirming && !isUpdatingPassword && view !== 'auth';
+
   return (
     <div className="min-h-screen bg-white text-slate-800 flex flex-col">
       {DEV_MODE.enable && (
@@ -190,27 +195,37 @@ const App: React.FC = () => {
           🚧 MODO DESARROLLO ACTIVO - LOGIN SUSPENDIDO ({DEV_MODE.profile.role}) 🚧
         </div>
       )}
-      <Header isAuthenticated={!!session} profile={profile} setView={setView} onLogout={handleLogout} view={view} />
+      
+      {/* HEADER: Only rendered in public views */}
+      {isPublicView && (
+        <Header isAuthenticated={!!session} profile={profile} setView={setView} onLogout={handleLogout} view={view} />
+      )}
+
       <main className="flex-grow">
         {renderContent()}
       </main>
-      <footer className="border-t-0 text-center p-6 mt-10 text-sm text-slate-500">
-        <div className="flex justify-center items-center gap-6 mb-4">
-            <a href="https://www.facebook.com/profile.php?id=61558340549778" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-                <FacebookIcon className="w-6 h-6 text-slate-500 hover:text-[#212147] transition-colors" />
-            </a>
-            <a href="https://www.instagram.com/dmdasesorias/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-                <InstagramIcon className="w-6 h-6 text-slate-500 hover:text-[#212147] transition-colors" />
-            </a>
-            <a href="mailto:info@dmdasesorias.com" aria-label="Correo Electrónico">
-                <span className="material-symbols-outlined w-6 h-6 text-slate-500 hover:text-[#212147] transition-colors">mail</span>
-            </a>
-            <a href="https://wa.me/573104332910" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
-                <WhatsappIcon className="w-6 h-6 text-slate-500 hover:text-[#212147] transition-colors" />
-            </a>
-        </div>
-        <p>&copy; {new Date().getFullYear()} DMD Asesorías. Todos los derechos reservados.</p>
-      </footer>
+
+      {/* FOOTER: Only rendered in public views */}
+      {isPublicView && (
+        <footer className="border-t-0 text-center p-6 mt-10 text-sm text-slate-500">
+            <div className="flex justify-center items-center gap-6 mb-4">
+                <a href="https://www.facebook.com/profile.php?id=61558340549778" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                    <FacebookIcon className="w-6 h-6 text-slate-500 hover:text-[#212147] transition-colors" />
+                </a>
+                <a href="https://www.instagram.com/dmdasesorias/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                    <InstagramIcon className="w-6 h-6 text-slate-500 hover:text-[#212147] transition-colors" />
+                </a>
+                <a href="mailto:info@dmdasesorias.com" aria-label="Correo Electrónico">
+                    <span className="material-symbols-outlined w-6 h-6 text-slate-500 hover:text-[#212147] transition-colors">mail</span>
+                </a>
+                <a href="https://wa.me/573104332910" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+                    <WhatsappIcon className="w-6 h-6 text-slate-500 hover:text-[#212147] transition-colors" />
+                </a>
+            </div>
+            <p>&copy; {new Date().getFullYear()} DMD Asesorías. Todos los derechos reservados.</p>
+        </footer>
+      )}
+
       <ScrollToTopButton />
     </div>
   );

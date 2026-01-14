@@ -11,6 +11,7 @@ import { Profile } from '../App.tsx';
 
 interface IntranetProps {
     profile: Profile;
+    onLogout: () => void;
 }
 
 type ClientView = 'dashboard' | 'templates' | 'support_ia' | 'inventory_tool';
@@ -93,7 +94,7 @@ const ClientDashboard: React.FC<{ profile: Profile, setView: (view: ClientView) 
 );
 
 
-const Intranet: React.FC<IntranetProps> = ({ profile }) => {
+const Intranet: React.FC<IntranetProps> = ({ profile, onLogout }) => {
     const is_admin = profile.role === 'ADMINISTRATOR' || profile.role === 'EDITOR';
 
     const [adminView, setAdminView] = useState<AdminView>('dashboard');
@@ -141,15 +142,22 @@ const Intranet: React.FC<IntranetProps> = ({ profile }) => {
                                     <NavItem icon={<span className="material-symbols-outlined">auto_awesome</span>} label="Soporte IA" isActive={clientView === 'support_ia'} onClick={() => setClientView('support_ia')} />
                                     <NavItem icon={<span className="material-symbols-outlined">inventory_2</span>} label="Ajuste Inventario" isActive={clientView === 'inventory_tool'} onClick={() => setClientView('inventory_tool')} />
                                     <NavItem icon={<span className="material-symbols-outlined">description</span>} label="Plantillas" isActive={clientView === 'templates'} onClick={() => setClientView('templates')} />
-                                    <div className="pt-4 mt-4 border-t border-slate-200">
-                                        <p className="text-xs text-slate-500 px-4 mb-2">¿Necesitas más ayuda?</p>
-                                        <a href="#contact" className="flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-100 transition-colors">
-                                            <span className="material-symbols-outlined">support_agent</span>
-                                            <span className="ml-3">Contactar Asesor</span>
-                                        </a>
-                                    </div>
                                 </>
                             )}
+                            
+                            {/* Separator and Logout / Support Link */}
+                            <div className="pt-4 mt-4 border-t border-slate-200 space-y-2">
+                                {!is_admin && (
+                                    <a href="https://wa.me/573104332910" target="_blank" rel="noopener noreferrer" className="flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-100 transition-colors">
+                                        <span className="material-symbols-outlined">support_agent</span>
+                                        <span className="ml-3">Soporte Humano</span>
+                                    </a>
+                                )}
+                                <button onClick={onLogout} className="flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg text-red-600 hover:bg-red-50 transition-colors">
+                                    <span className="material-symbols-outlined">logout</span>
+                                    <span className="ml-3">Cerrar Sesión</span>
+                                </button>
+                            </div>
                         </nav>
                     </div>
                 </aside>
