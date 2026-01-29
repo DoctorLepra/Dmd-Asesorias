@@ -26,8 +26,9 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated, profile, setView, onLo
     } else if (view === 'auth') {
       setActiveItem('portal');
     } else if (view === 'landing') {
-      // Default to the first main section when on the landing page
       setActiveItem('about');
+    } else if (view === 'terms') {
+      setActiveItem('');
     }
   }, [view]);
 
@@ -91,15 +92,15 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated, profile, setView, onLo
 
   return (
     <>
-    <header className={`${headerBaseClasses} ${isScrolled ? headerScrolledClasses : headerTopClasses}`}>
+    <header className={`${headerBaseClasses} ${(isScrolled || view === 'terms') ? headerScrolledClasses : headerTopClasses}`}>
         {/* Container to match page content alignment */}
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-12">
                  {/* This column matches the content width (10/12 cols, centered on large screens) */}
-                 <div className={`col-span-12 lg:col-start-2 lg:col-span-10 transition-all duration-300 ease-in-out ${isScrolled ? 'bg-black/30 backdrop-blur-lg rounded-full shadow-2xl' : ''}`}>
+                 <div className={`col-span-12 lg:col-start-2 lg:col-span-10 transition-all duration-300 ease-in-out ${(isScrolled || view === 'terms') ? 'bg-black/30 backdrop-blur-lg rounded-full shadow-2xl' : ''}`}>
           
                     {/* Top Contact Info (Only visible when not scrolled) */}
-                    <div className={`transition-all duration-300 ease-in-out ${isScrolled ? 'opacity-0 max-h-0 overflow-hidden' : 'opacity-100 max-h-20'}`}>
+                    <div className={`transition-all duration-300 ease-in-out ${(isScrolled || view === 'terms') ? 'opacity-0 max-h-0 overflow-hidden' : 'opacity-100 max-h-20'}`}>
                         <div className="px-4 sm:px-6 lg:px-8">
                             <div className="flex justify-end items-center py-2 text-sm font-light space-x-6">
                                 <div className="flex items-center gap-1">
@@ -117,10 +118,10 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated, profile, setView, onLo
                     
                     {/* Main Navbar */}
                     <div className="px-4 sm:px-6 lg:px-8">
-                        <div className={`flex items-center justify-between transition-height duration-300 ${isScrolled ? 'h-16' : 'h-20'}`}>
+                        <div className={`flex items-center justify-between transition-height duration-300 ${(isScrolled || view === 'terms') ? 'h-16' : 'h-20'}`}>
                                 {/* Izquierda: Logo */}
                                 <div className="flex items-center cursor-pointer" onClick={() => handleNavigation('landing', 'landing')}>
-                                    <img src="https://i.imgur.com/T0Zirsz.png" alt="DMD Asesores Logo" className={`w-auto transition-all duration-300 ${isScrolled ? 'h-8' : 'h-12'} brightness-0 invert`} />
+                                    <img src="https://i.imgur.com/T0Zirsz.png" alt="DMD Asesores Logo" className={`w-auto transition-all duration-300 ${(isScrolled || view === 'terms') ? 'h-8' : 'h-12'} brightness-0 invert`} />
                                 </div>
 
                                 {/* Derecha: Lista de items */}
@@ -149,7 +150,7 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated, profile, setView, onLo
                                                 className="relative h-full px-2 text-sm font-medium transition-colors hover:text-indigo-200 flex items-center"
                                             >
                                                 {/* Line Indicator - changes style on scroll */}
-                                                <span className={`absolute left-0 w-full transition-all duration-300 ${activeItem === item.id ? 'opacity-100' : 'opacity-0'} ${isScrolled ? 'bottom-2 h-1 bg-white rounded-full' : '-top-[2px] h-[4px] bg-[#212147]'}`}></span>
+                                                <span className={`absolute left-0 w-full transition-all duration-300 ${activeItem === item.id ? 'opacity-100' : 'opacity-0'} ${(isScrolled || view === 'terms') ? 'bottom-2 h-1 bg-white rounded-full' : '-top-[2px] h-[4px] bg-[#212147]'}`}></span>
                                                 
                                                 {item.label}
                                             </button>

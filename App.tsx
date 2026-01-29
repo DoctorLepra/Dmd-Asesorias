@@ -7,12 +7,13 @@ import AuthPage from './components/AuthPage.tsx';
 import Intranet from './components/Intranet.tsx';
 import ConfirmationPage from './components/ConfirmationPage.tsx';
 import UpdatePasswordPage from './components/UpdatePasswordPage.tsx';
+import TermsPage from './components/TermsPage.tsx';
 import { FacebookIcon, InstagramIcon, WhatsappIcon } from './components/common/Icons.tsx';
 import { supabase } from './lib/supabaseClient.ts';
 import type { Session, User } from '@supabase/supabase-js';
 import ScrollToTopButton from './components/common/ScrollToTopButton.tsx';
 
-export type View = 'landing' | 'auth' | 'about' | 'services';
+export type View = 'landing' | 'auth' | 'about' | 'services' | 'terms';
 
 export interface Profile {
   id: string;
@@ -99,6 +100,12 @@ const App: React.FC = () => {
       }
     });
 
+    // Step 3: Handle deep-linking for Terms page
+    const path = window.location.pathname;
+    if (path === '/terminos' || path === '/terms') {
+      setView('terms');
+    }
+
     return () => {
       console.log("[Auth Gatekeeper] Cleaning up listener.");
       subscription.unsubscribe();
@@ -178,6 +185,8 @@ const App: React.FC = () => {
         return <AboutPage setView={setView} />;
       case 'services':
         return <ServicesPage setView={setView} />;
+      case 'terms':
+        return <TermsPage setView={setView} />;
       case 'landing':
       default:
         return <LandingPage setView={setView} />;
@@ -223,6 +232,12 @@ const App: React.FC = () => {
                 </a>
             </div>
             <p>&copy; {new Date().getFullYear()} DMD Asesorías. Todos los derechos reservados.</p>
+            <button 
+                onClick={() => setView('terms')} 
+                className="mt-2 hover:text-primary transition-colors underline underline-offset-4 cursor-pointer"
+            >
+                Términos y condiciones
+            </button>
         </footer>
       )}
 
