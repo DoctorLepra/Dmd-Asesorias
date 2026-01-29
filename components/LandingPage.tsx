@@ -1,14 +1,12 @@
 
 
 import React, { useState, useEffect, useRef } from 'react';
-import { View } from '../App.tsx';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient.ts';
 import Typewriter from './common/Typewriter.tsx';
 import { ServiceCard } from './common/ServiceCard.tsx';
 
-interface LandingPageProps {
-  setView: (view: View) => void;
-}
+interface LandingPageProps {}
 
 interface ClientLogoData {
   id:string;
@@ -50,7 +48,8 @@ const SuccessCaseCard: React.FC<{ testimonial: TestimonialData }> = ({ testimoni
 );
 
 
-const LandingPage: React.FC<LandingPageProps> = ({ setView }) => {
+const LandingPage: React.FC<LandingPageProps> = () => {
+    const navigate = useNavigate();
   const [clientLogos, setClientLogos] = useState<ClientLogoData[]>([]);
   const [testimonials, setTestimonials] = useState<TestimonialData[]>([]);
   const [currentTestimonialIndex, setCurrentTestimonialIndex] = useState(0);
@@ -192,7 +191,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ setView }) => {
                         Cotiza
                     </button>
                     <button 
-                        onClick={() => setView('auth')} 
+                        onClick={() => navigate('/ingreso')} 
                         className="bg-transparent border border-white text-white font-bold py-3 px-8 rounded-[150px] hover:bg-white/10 transition-colors uppercase text-sm tracking-wide"
                     >
                         Portal de clientes
@@ -230,7 +229,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ setView }) => {
                   No solo implementamos herramientas; construimos alianzas estratégicas para asegurar que cada módulo de Contapyme y Agrowin trabaje a su máximo potencial, alineado con sus objetivos de negocio.
                 </p>
                 <button 
-                  onClick={() => setView('about')} 
+                  onClick={() => navigate('/nosotros')} 
                   className="bg-transparent border border-slate-800 text-slate-800 font-bold py-3 px-10 rounded-[150px] hover:bg-slate-800 hover:text-white transition-colors text-base"
                 >
                   Conocer más
@@ -320,7 +319,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ setView }) => {
                     icon={<span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>}
                     title={`Servicio ${i + 1}`}
                     description="Descripción breve del servicio, explicando el valor que aporta y el problema que soluciona para el cliente."
-                    onClick={() => setView('services')}
+                    onClick={() => navigate('/servicios')}
                   />
                 ))}
               </div>
@@ -460,7 +459,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ setView }) => {
                   Accede a nuestro portal exclusivo para clientes donde podrás gestionar tus tickets de soporte, consultar nuestra base de conocimientos con IA, y descargar plantillas y formatos para agilizar tus procesos contables.
                 </p>
                 <button 
-                  onClick={() => setView('auth')} 
+                  onClick={() => navigate('/ingreso')} 
                   className="bg-transparent border border-slate-800 text-slate-800 font-bold py-3 px-10 rounded-[150px] hover:bg-slate-800 hover:text-white transition-colors text-base"
                 >
                   Ingresar

@@ -1,12 +1,8 @@
-
 import React, { useRef, useState, useEffect } from 'react';
-import type { View } from '../App.tsx';
 import { ServiceCard } from './common/ServiceCard.tsx';
 import { supabase } from '../lib/supabaseClient.ts';
 
-interface ServicesPageProps {
-  setView: (view: View) => void;
-}
+interface ServicesPageProps {}
 
 const servicesData = [
   {
@@ -41,7 +37,7 @@ const servicesData = [
   },
 ];
 
-const ServicesPage: React.FC<ServicesPageProps> = ({ setView }) => {
+const ServicesPage: React.FC<ServicesPageProps> = () => {
   const contactSectionRef = useRef<HTMLDivElement>(null);
   const [isContactVisible, setIsContactVisible] = useState(false);
 

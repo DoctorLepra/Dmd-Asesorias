@@ -1,17 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { View } from '../App.tsx';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient.ts';
 import LoadingSpinner from './common/LoadingSpinner.tsx';
 import PasswordStrengthMeter from './common/PasswordStrengthMeter.tsx';
 import { getPasswordValidationState } from '../utils/passwordValidator.ts';
 
-interface AuthPageProps {
-  setView: (view: View) => void;
-}
+interface AuthPageProps {}
 
 type Mode = 'login' | 'signup' | 'forgotPassword';
 
-const AuthPage: React.FC<AuthPageProps> = ({ setView }) => {
+const AuthPage: React.FC<AuthPageProps> = () => {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -88,7 +87,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ setView }) => {
             <p className="text-slate-600">
                 Hemos enviado un correo de verificación a <strong>{email}</strong>. Por favor, revisa tu bandeja de entrada y haz clic en el enlace para activar tu cuenta.
             </p>
-             <button onClick={() => setView('landing')} className="mt-4 font-medium text-[#212147] hover:text-[#1b1b3a]">
+             <button onClick={() => navigate('/')} className="mt-4 font-medium text-[#212147] hover:text-[#1b1b3a]">
               Volver al inicio
             </button>
         </div>
@@ -108,7 +107,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ setView }) => {
           </h2>
           <p className="mt-2 text-center text-sm text-slate-600">
             o{' '}
-            <button onClick={() => setView('landing')} className="font-medium text-[#212147] hover:text-[#1b1b3a]">
+            <button onClick={() => navigate('/')} className="font-medium text-[#212147] hover:text-[#1b1b3a]">
               vuelve al inicio
             </button>
           </p>

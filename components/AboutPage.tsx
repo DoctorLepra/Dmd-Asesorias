@@ -1,12 +1,11 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import type { View } from '../App.tsx';
+import { useNavigate } from 'react-router-dom';
 
-interface AboutPageProps {
-  setView: (view: View) => void;
-}
+interface AboutPageProps {}
 
-const AboutPage: React.FC<AboutPageProps> = ({ setView }) => {
+const AboutPage: React.FC<AboutPageProps> = () => {
+  const navigate = useNavigate();
   const aboutSectionRef = useRef<HTMLDivElement>(null);
   const [isAboutVisible, setIsAboutVisible] = useState(false);
   const experienceSectionRef = useRef<HTMLDivElement>(null);
@@ -81,7 +80,7 @@ const AboutPage: React.FC<AboutPageProps> = ({ setView }) => {
                   No solo implementamos herramientas; construimos alianzas estratégicas para asegurar que cada módulo de Contapyme y Agrowin trabaje a su máximo potencial, alineado con sus objetivos de negocio.
                 </p>
                 <button 
-                  onClick={() => setView('services')} 
+                  onClick={() => navigate('/servicios')} 
                   className="bg-[#212147] text-white font-bold py-3 px-10 rounded-[150px] hover:bg-[#1b1b3a] transition-colors text-base"
                 >
                   Ver Nuestros Servicios

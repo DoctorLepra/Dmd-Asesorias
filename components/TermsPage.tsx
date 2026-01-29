@@ -1,11 +1,8 @@
 import React, { useState } from 'react';
-import { View } from '../App';
+import { useNavigate } from 'react-router-dom';
 
-interface TermsPageProps {
-  setView: (view: View) => void;
-}
-
-const TermsPage: React.FC<TermsPageProps> = ({ setView }) => {
+const TermsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [agreed, setAgreed] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,7 +42,7 @@ const TermsPage: React.FC<TermsPageProps> = ({ setView }) => {
 
         if (response.ok) {
           setShowModal(false);
-          setView('landing');
+          navigate('/');
           alert("¡Registro completado con éxito! Gracias por aceptar nuestros términos.");
         } else {
           alert("Hubo un error al enviar el formulario. Por favor, inténtalo de nuevo.");
