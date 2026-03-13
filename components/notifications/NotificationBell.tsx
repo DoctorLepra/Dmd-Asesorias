@@ -187,28 +187,37 @@ export default function NotificationBell({ onNotificationClick }: NotificationBe
       {isOpen && (
         <>
           <div className="fixed inset-0 z-[90]" onClick={() => setIsOpen(false)}></div>
-          <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 z-[100] overflow-hidden animate-fade-in">
-            <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center text-slate-800">
+          <div className="fixed sm:absolute inset-0 sm:inset-auto sm:right-0 sm:mt-3 w-full sm:w-80 h-full sm:h-auto bg-white sm:rounded-2xl shadow-2xl border-none sm:border sm:border-slate-200 z-[1000] sm:z-[100] overflow-hidden animate-fade-in flex flex-col">
+            <div className="p-6 sm:p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center text-slate-800">
               <div className="flex flex-col">
-                <h3 className="text-xs font-bold uppercase tracking-widest opacity-60">Notificaciones</h3>
-                {unreadCount > 0 && <span className="text-[10px] text-primary font-bold mt-0.5">{unreadCount} nuevas</span>}
+                <h3 className="text-sm sm:text-xs font-black uppercase tracking-[0.2em] sm:tracking-widest opacity-60">Notificaciones</h3>
+                {unreadCount > 0 && <span className="text-xs sm:text-[10px] text-primary font-black mt-0.5">{unreadCount} nuevas</span>}
               </div>
-              {unreadCount > 0 && (
+              <div className="flex items-center gap-4">
+                {unreadCount > 0 && (
+                  <button 
+                    onClick={markAllAsRead}
+                    className="text-xs sm:text-[10px] font-bold text-blue-600 hover:underline"
+                  >
+                    Leídas
+                  </button>
+                )}
                 <button 
-                  onClick={markAllAsRead}
-                  className="text-[10px] font-bold text-primary hover:underline"
+                  onClick={() => setIsOpen(false)}
+                  className="sm:hidden p-2 bg-slate-200/50 rounded-xl text-slate-500 active:scale-95"
                 >
-                  Marcar todo como leído
+                  <span className="material-symbols-outlined text-xl">close</span>
                 </button>
-              )}
+              </div>
             </div>
-            <div className="max-h-[400px] overflow-y-auto legal-scroll">
+            
+            <div className="flex-1 overflow-y-auto legal-scroll">
               {notifications.length === 0 ? (
-                <div className="py-12 px-6 text-center flex flex-col items-center gap-3">
-                  <div className="bg-slate-50 p-3 rounded-full text-slate-200">
-                    <span className="material-symbols-outlined text-4xl">inbox</span>
+                <div className="py-20 px-6 text-center flex flex-col items-center gap-4">
+                  <div className="bg-slate-50 p-5 rounded-full text-slate-200 border border-slate-100 shadow-inner">
+                    <span className="material-symbols-outlined text-5xl">notifications_off</span>
                   </div>
-                  <p className="text-sm text-slate-400 font-medium">Bandeja de entrada vacía</p>
+                  <p className="text-base sm:text-sm text-slate-400 font-bold italic">Bandeja de entrada vacía</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-50">
@@ -220,25 +229,25 @@ export default function NotificationBell({ onNotificationClick }: NotificationBe
                         if (onNotificationClick) onNotificationClick(notif);
                         setIsOpen(false);
                       }}
-                      className={`group cursor-pointer block p-4 hover:bg-slate-50 transition-all border-l-4 ${!notif.is_read ? 'bg-primary/5 border-primary' : 'border-transparent'}`}
+                      className={`group cursor-pointer block p-6 sm:p-4 hover:bg-slate-50 transition-all border-l-4 ${!notif.is_read ? 'bg-blue-50/30 border-blue-500' : 'border-transparent'}`}
                     >
-                      <div className="flex items-start gap-3">
-                        <div className={`mt-1 flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                      <div className="flex items-start gap-4 sm:gap-3">
+                        <div className={`mt-1 flex-shrink-0 w-10 h-10 sm:w-8 sm:h-8 rounded-xl sm:rounded-lg flex items-center justify-center transition-colors shadow-sm ${
                           !notif.is_read 
                           ? (notif.type === 'task' ? 'bg-blue-600 text-white' : 'bg-primary text-white') 
                           : 'bg-slate-100 text-slate-400'
                         }`}>
                           {notif.type === 'task' ? (
-                            <span className="material-symbols-outlined text-sm">assignment</span>
+                            <span className="material-symbols-outlined text-lg sm:text-sm text-white">assignment</span>
                           ) : (
-                            <span className="material-symbols-outlined text-sm">info</span>
+                            <span className="material-symbols-outlined text-lg sm:text-sm">info</span>
                           )}
                         </div>
                         <div className="flex-1 overflow-hidden">
-                          <h4 className={`text-sm font-bold truncate ${!notif.is_read ? 'text-slate-900' : 'text-slate-500'}`}>{notif.title}</h4>
-                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">{notif.message}</p>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-tighter">
+                          <h4 className={`text-base sm:text-sm font-black truncate ${!notif.is_read ? 'text-slate-900' : 'text-slate-500'}`}>{notif.title}</h4>
+                          <p className="text-sm sm:text-xs text-slate-500 mt-1 sm:mt-0.5 line-clamp-3 leading-relaxed font-bold">{notif.message}</p>
+                          <div className="flex items-center justify-between mt-3">
+                            <span className="text-[10px] sm:text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded">
                               {new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
@@ -249,8 +258,9 @@ export default function NotificationBell({ onNotificationClick }: NotificationBe
                 </div>
               )}
             </div>
-            <div className="p-3 bg-slate-50 border-t border-slate-100 text-center">
-               <button className="text-[10px] font-bold text-primary hover:text-primary-hover uppercase tracking-widest transition-colors">Ver todo el historial</button>
+            
+            <div className="p-5 sm:p-3 bg-slate-50 border-t border-slate-100 text-center">
+               <button className="text-xs sm:text-[10px] font-black text-blue-600 hover:text-blue-700 uppercase tracking-[0.2em] transition-colors">Historial Completo</button>
             </div>
           </div>
         </>

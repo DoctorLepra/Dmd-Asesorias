@@ -340,9 +340,20 @@ export default function TaskBoard({ entityId, profile, highlightId, onHighlightC
                   className="fixed inset-0 z-[90]" 
                   onClick={() => setIsFilterMenuOpen(false)}
                 ></div>
-                <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-100 p-5 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center pb-2 border-b border-slate-50">
+                <div className="fixed sm:absolute inset-0 sm:inset-auto sm:right-0 sm:mt-2 w-full sm:w-72 h-full sm:h-auto bg-white sm:rounded-2xl shadow-2xl border-none sm:border sm:border-slate-100 p-8 sm:p-5 z-[1000] sm:z-[100] animate-in fade-in slide-in-from-bottom sm:slide-in-from-top-2 duration-300 sm:duration-200 flex flex-col">
+                  {/* Header del Modal Movil con Boton Cerrar */}
+                  <div className="flex sm:hidden justify-between items-center mb-8">
+                    <h3 className="text-xl font-black text-slate-800">Filtros Avanzados</h3>
+                    <button 
+                      onClick={() => setIsFilterMenuOpen(false)}
+                      className="p-3 bg-slate-100 text-slate-500 rounded-2xl active:scale-90 transition-all"
+                    >
+                      <span className="material-symbols-outlined">close</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-6 sm:space-y-4 flex-1">
+                    <div className="hidden sm:flex justify-between items-center pb-2 border-b border-slate-50">
                       <h4 className="text-xs font-black uppercase tracking-widest text-slate-400">Ver Tareas</h4>
                       <button 
                         onClick={() => {
@@ -357,11 +368,11 @@ export default function TaskBoard({ entityId, profile, highlightId, onHighlightC
                     </div>
 
                     <div className="space-y-2">
-                       <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Estado</label>
+                       <label className="text-[10px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Estado</label>
                        <select
                           value={statusFilter}
                           onChange={(e) => setStatusFilter(e.target.value as any)}
-                          className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-4 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer"
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-4 sm:py-2.5 px-5 sm:px-4 rounded-2xl sm:rounded-xl text-base sm:text-sm font-bold focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer"
                         >
                           <option value="Todos">Todos los Estados</option>
                           <option value="Pendiente">Solo Pendientes</option>
@@ -371,11 +382,11 @@ export default function TaskBoard({ entityId, profile, highlightId, onHighlightC
                     </div>
 
                     <div className="space-y-2">
-                       <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Responsable</label>
+                       <label className="text-[10px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Responsable</label>
                        <select
                           value={userFilter}
                           onChange={(e) => setUserFilter(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-4 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer"
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-4 sm:py-2.5 px-5 sm:px-4 rounded-2xl sm:rounded-xl text-base sm:text-sm font-bold focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer"
                         >
                           <option value="Todos">Todos los Responsables</option>
                           {users.map(u => (
@@ -386,9 +397,28 @@ export default function TaskBoard({ entityId, profile, highlightId, onHighlightC
                         </select>
                     </div>
 
+                    <div className="sm:hidden flex-1 pb-10 flex flex-col justify-end">
+                       <button 
+                        onClick={() => {
+                          setStatusFilter('Todos');
+                          setUserFilter('Todos');
+                          // No cerramos para que vea el cambio, o podemos cerrar
+                        }}
+                        className="w-full mb-3 py-4 text-slate-400 font-bold uppercase text-xs tracking-widest"
+                      >
+                        Limpiar Filtros
+                      </button>
+                      <button
+                        onClick={() => setIsFilterMenuOpen(false)}
+                        className="w-full py-5 bg-blue-600 text-white rounded-[24px] text-sm font-black uppercase shadow-xl shadow-blue-500/20 active:scale-95 transition-all"
+                      >
+                        Aplicar y Ver Tareas
+                      </button>
+                    </div>
+
                     <button
                       onClick={() => setIsFilterMenuOpen(false)}
-                      className="w-full mt-2 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-black transition-colors"
+                      className="hidden sm:block w-full mt-2 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-black transition-colors"
                     >
                       Aplicar Filtros
                     </button>
