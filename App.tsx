@@ -139,6 +139,8 @@ const App: React.FC = () => {
   }, [session]);
 
 
+  const [taskToHighlight, setTaskToHighlight] = useState<string | null>(null);
+
   const handleLogout = async () => {
     if (DEV_MODE.enable) {
       // En modo desarrollo, "cerrar sesión" simplemente recarga la página o va al landing
@@ -152,6 +154,18 @@ const App: React.FC = () => {
 
     await supabase.auth.signOut();
     setView('landing');
+  };
+
+  const handleNotificationClick = (notif: any) => {
+    // Si la notificación está relacionada con una tarea (tiene related_id)
+    if (notif.type === 'task' && notif.related_id) {
+       console.log(`[App] Navigating to task: ${notif.related_id}`);
+       setTaskToHighlight(notif.related_id);
+       // Forzamos la vista a neutral (o lo que maneje Intranet) si fuera necesario, 
+       // pero App renderiza Intranet si hay sesión. 
+       // Solo nos aseguramos de no estar en una vista pública que tape la intranet.
+       if (view !== 'landing') setView('landing'); 
+    }
   };
 
   const renderContent = () => {
@@ -169,7 +183,15 @@ const App: React.FC = () => {
     }
     if (session && profile) {
       // Pasamos handleLogout para que la Intranet pueda tener su propio botón de salir
-      return <Intranet profile={profile} onLogout={handleLogout} />;
+      return (
+        <Intranet 
+          profile={profile} 
+          onLogout={handleLogout} 
+          highlightTaskId={taskToHighlight}
+          onHighlightComplete={() => setTaskToHighlight(null)}
+          onNotificationClick={handleNotificationClick}
+        />
+      );
     }
     switch (view) {
       case 'auth':
@@ -196,9 +218,19 @@ const App: React.FC = () => {
         </div>
       )}
       
-      {/* HEADER: Only rendered in public views */}
-      {isPublicView && (
-        <Header isAuthenticated={!!session} profile={profile} setView={setView} onLogout={handleLogout} view={view} />
+      {/* 
+          HEADER: Solo se muestra en vistas públicas O cuando no hay sesión.
+          En la Intranet (session && profile), la UI es manejada internamente por el componente Intranet (Sidebar/TopBar).
+      */}
+      {isPublicView && !session && (
+        <Header 
+          isAuthenticated={!!session} 
+          profile={profile} 
+          setView={setView} 
+          onLogout={handleLogout} 
+          view={view} 
+          onNotificationClick={handleNotificationClick} 
+        />
       )}
 
       <main className="flex-grow">

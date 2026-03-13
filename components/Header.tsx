@@ -1,8 +1,6 @@
-
-
-
 import React, { useState, useEffect } from 'react';
 import { View, Profile } from '../App.tsx';
+import NotificationBell from './notifications/NotificationBell.tsx';
 
 interface HeaderProps {
   isAuthenticated: boolean;
@@ -10,9 +8,10 @@ interface HeaderProps {
   setView: (view: View) => void;
   onLogout: () => void;
   view: View;
+  onNotificationClick?: (notif: any) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ isAuthenticated, profile, setView, onLogout, view }) => {
+const Header: React.FC<HeaderProps> = ({ isAuthenticated, profile, setView, onLogout, view, onNotificationClick }) => {
   const [activeItem, setActiveItem] = useState<string>('about');
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -81,25 +80,28 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated, profile, setView, onLo
     { id: 'about', label: 'Nosotros', action: () => handleNavigation('about', 'about') },
     { id: 'services', label: 'Servicios', action: () => handleNavigation('services', 'services') },
     { id: 'testimonials', label: 'Casos de éxito', action: () => handleNavigation('testimonials', 'landing') },
-    { id: 'portal', label: 'Portal de clientes', action: () => isAuthenticated ? null : handleNavigation('portal', 'auth') },
+    { id: 'portal', label: 'Portal de clientes', action: () => isAuthenticated ? setView('landing') : handleNavigation('portal', 'auth') },
     { id: 'contact', label: 'Contacto', action: () => handleNavigation('contact', 'landing') },
   ];
   
+  const isLanding = view === 'landing';
+  const shouldBeSolid = isScrolled || !isLanding || isAuthenticated;
+  
   const headerBaseClasses = "w-full z-50 text-white transition-all duration-300 ease-in-out";
-  const headerTopClasses = "absolute top-0";
-  const headerScrolledClasses = "fixed top-4 left-0 right-0";
+  // En landing transparente arriba, en otros casos siempre fixed/solid
+  const headerPositionClasses = (isLanding && !isScrolled) ? "absolute top-0" : "fixed top-0 md:top-4";
 
   return (
     <>
-    <header className={`${headerBaseClasses} ${isScrolled ? headerScrolledClasses : headerTopClasses}`}>
+    <header className={`${headerBaseClasses} ${headerPositionClasses}`}>
         {/* Container to match page content alignment */}
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-12">
                  {/* This column matches the content width (10/12 cols, centered on large screens) */}
-                 <div className={`col-span-12 lg:col-start-2 lg:col-span-10 transition-all duration-300 ease-in-out ${isScrolled ? 'bg-black/30 backdrop-blur-lg rounded-full shadow-2xl' : ''}`}>
+                 <div className={`col-span-12 lg:col-start-2 lg:col-span-10 transition-all duration-300 ease-in-out ${shouldBeSolid ? 'bg-[#212147] md:rounded-full shadow-2xl border border-white/10' : ''}`}>
           
-                    {/* Top Contact Info (Only visible when not scrolled) */}
-                    <div className={`transition-all duration-300 ease-in-out ${isScrolled ? 'opacity-0 max-h-0 overflow-hidden' : 'opacity-100 max-h-20'}`}>
+                    {/* Top Contact Info (Only visible when not scrolled on landing) */}
+                    <div className={`transition-all duration-300 ease-in-out ${(isScrolled || !isLanding || isAuthenticated) ? 'opacity-0 max-h-0 overflow-hidden' : 'opacity-100 max-h-20'}`}>
                         <div className="px-4 sm:px-6 lg:px-8">
                             <div className="flex justify-end items-center py-2 text-sm font-light space-x-6">
                                 <div className="flex items-center gap-1">
@@ -127,9 +129,10 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated, profile, setView, onLo
                                 <nav className="hidden md:flex items-center space-x-8 h-full">
                                     {isAuthenticated ? (
                                         <div className="flex items-center space-x-4">
+                                            <NotificationBell onNotificationClick={onNotificationClick} />
                                             {profile && (
                                                 <div className="flex items-center text-white">
-                                                    <span className="material-symbols-outlined text-3xl">account_circle</span>
+                                                    <span className="material-symbols-outlined text-3xl cursor-pointer" onClick={() => setView('landing')}>account_circle</span>
                                                     <div className="ml-3 text-left">
                                                         <p className="text-sm font-bold leading-tight">{profile.full_name}</p>
                                                         <p className="text-xs opacity-80">{profile.role}</p>
@@ -157,8 +160,9 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated, profile, setView, onLo
                                     )}
                                 </nav>
 
-                                {/* Mobile Menu Button */}
-                                <div className="md:hidden">
+                                {/* Mobile Menu/Notifications */}
+                                <div className="md:hidden flex items-center gap-2">
+                                    {isAuthenticated && <NotificationBell onNotificationClick={onNotificationClick} />}
                                     <button onClick={() => setIsMobileMenuOpen(true)} className="text-white p-2">
                                         <span className="material-symbols-outlined">menu</span>
                                     </button>

@@ -71,10 +71,16 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ userToEdit, onClose, onSa
         body: JSON.stringify(payload),
       });
 
-      const result = await response.json();
+      const responseText = await response.text();
+      let result: any;
+      try {
+        result = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        throw new Error(`El servidor devolvió una respuesta no válida (${response.status}). Asegúrate de estar ejecutando el proyecto con 'vercel dev'.`);
+      }
 
       if (!response.ok) {
-        throw new Error(result.error || 'Ocurrió un error en el servidor.');
+        throw new Error(result.error || `Error ${response.status}: ${response.statusText}`);
       }
 
       onSave();

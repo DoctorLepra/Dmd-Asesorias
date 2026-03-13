@@ -36,7 +36,7 @@ const SuccessCaseCard: React.FC<{ testimonial: TestimonialData }> = ({ testimoni
     <div className="bg-indigo-900/30 p-6 rounded-2xl border border-indigo-400/60 h-full flex flex-col">
       <div className="flex items-center mb-4">
         <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center mr-4 flex-shrink-0">
-          <img src={testimonial.image_url || 'https://via.placeholder.com/40'} alt={`Logo ${testimonial.company}`} className="w-10 h-10 rounded-full object-contain" />
+          <img src={testimonial.image_url || 'https://placehold.co/40'} alt={`Logo ${testimonial.company}`} className="w-10 h-10 rounded-full object-contain" />
         </div>
         <div>
           <p className="font-bold text-white">{testimonial.name}</p>
@@ -353,7 +353,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ setView }) => {
                 
                 <div className="logo-carousel">
                   <div className="logo-carousel-track">
-                    {[...(clientLogos.length > 0 ? clientLogos : [...Array(20)].map((_,i) => ({id: `${i}`, logo_url: 'https://via.placeholder.com/150x60/FFFFFF/000000?text=Logo', alt_text:`Cliente ${i+1}`, link_url: '#'}))), ...(clientLogos.length > 0 ? clientLogos : [...Array(20)].map((_,i) => ({id: `d-${i}`, logo_url: 'https://via.placeholder.com/150x60/FFFFFF/000000?text=Logo', alt_text:`Cliente ${i+1}`, link_url: '#'})))]
+                    {[...(clientLogos.length > 0 ? clientLogos : [...Array(20)].map((_,i) => ({id: `${i}`, logo_url: 'https://placehold.co/150x60?text=Logo', alt_text:`Cliente ${i+1}`, link_url: '#'}))), ...(clientLogos.length > 0 ? clientLogos : [...Array(20)].map((_,i) => ({id: `d-${i}`, logo_url: 'https://placehold.co/150x60?text=Logo', alt_text:`Cliente ${i+1}`, link_url: '#'})))]
                     .map((logo, i) => (
                       <a key={logo.id + i} href={logo?.link_url || '#'} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 w-48 flex justify-center items-center mx-4">
                         <img src={logo.logo_url} alt={logo.alt_text} className="h-14 object-contain grayscale hover:grayscale-0 hover:scale-110 transition-all duration-300 ease-in-out" />
@@ -506,8 +506,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ setView }) => {
                         <input type="tel" name="phone" placeholder="Celular" required className="w-full p-3 bg-slate-100 border border-slate-300 rounded-[150px] focus:ring-2 focus:ring-[#212147] focus:border-[#212147]" />
                         <input type="text" name="company" placeholder="Empresa" required className="w-full p-3 bg-slate-100 border border-slate-300 rounded-[150px] focus:ring-2 focus:ring-[#212147] focus:border-[#212147]" />
                     </div>
-                    <select name="interest" required className="w-full p-3 bg-slate-100 border border-slate-300 rounded-[150px] focus:ring-2 focus:ring-[#212147] focus:border-[#212147] appearance-none text-left px-4">
-                        <option value="" disabled selected>Estoy interesado en...</option>
+                    <select name="interest" required defaultValue="" className="w-full p-3 bg-slate-100 border border-slate-300 rounded-[150px] focus:ring-2 focus:ring-[#212147] focus:border-[#212147] appearance-none text-left px-4">
+                        <option value="" disabled>Estoy interesado en...</option>
                         <option value="Soporte tecnico">Soporte tecnico</option>
                         <option value="asesoria">Asesoría</option>
                         <option value="capacitacion">Capacitación</option>

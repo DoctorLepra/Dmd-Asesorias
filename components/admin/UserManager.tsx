@@ -90,9 +90,16 @@ const UserManager: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: userToDelete.id }),
             });
+            const responseText = await response.text();
+            let result: any;
+            try {
+                result = responseText ? JSON.parse(responseText) : {};
+            } catch (e) {
+                throw new Error(`El servidor devolvió una respuesta no válida (${response.status}).`);
+            }
+
             if (!response.ok) {
-                const result = await response.json();
-                throw new Error(result.error || 'Failed to delete user');
+                throw new Error(result.error || `Error ${response.status}: ${response.statusText}`);
             }
             alert('Usuario eliminado con éxito.');
             fetchUsers();

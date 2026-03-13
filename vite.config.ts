@@ -22,6 +22,27 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    server: {
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+          rewrite: (path) => path,
+          configure: (proxy, _options) => {
+            proxy.on('error', (err, _req, res) => {
+              console.error('Proxy Error:', err);
+              // Enviamos una respuesta JSON clara en lugar de un Error 500 genérico
+              res.writeHead(500, {
+                'Content-Type': 'application/json',
+              });
+              res.end(JSON.stringify({ 
+                error: 'Backend no detectado. Para activar la creación de usuarios localmente, debes cerrar este proceso y ejecutar el comando "vercel dev" en lugar de "npm run dev".' 
+              }));
+            });
+          },
+        }
+      }
+    },
     define: {
       // Inyectamos el valor encontrado directamente en el código del cliente
       // Esto hace que 'process.env.API_KEY' funcione en el navegador
