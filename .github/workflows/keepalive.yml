@@ -1,0 +1,24 @@
+name: Keep Supabase Alive (Ping DB)
+
+on:
+  schedule:
+    - cron: '0 0 */5 * *'
+  workflow_dispatch:
+
+jobs:
+  ping_supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/clientes?select=id&limit=1")
+          
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Ping a Supabase exitoso. Código: $HTTP_STATUS"
+          else
+            echo "❌ Falló el ping a Supabase. Código: $HTTP_STATUS"
+            exit 1
+          fi
