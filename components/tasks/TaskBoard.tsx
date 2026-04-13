@@ -16,6 +16,7 @@ interface Task {
   entity_id?: string;
   created_by_id?: string;
   created_at?: string;
+  completion_comment?: string;
 }
 
 interface TaskBoardProps {
@@ -32,6 +33,8 @@ export default function TaskBoard({ entityId, profile, highlightId, onHighlightC
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [taskToComplete, setTaskToComplete] = useState<Task | null>(null);
+  const [completionComment, setCompletionComment] = useState("");
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [statusFilter, setStatusFilter] = useState<'Todos' | 'Pendiente' | 'Completada' | 'Cancelada'>('Todos');
   const [userFilter, setUserFilter] = useState<string>('Todos');
@@ -262,7 +265,7 @@ export default function TaskBoard({ entityId, profile, highlightId, onHighlightC
     // 1. Obtener detalles y estado actual de la tarea antes de actualizar
     const { data: taskData } = await supabase
       .from("tasks")
-      .select("title, created_by_id, assigned_to_name, status")
+      .select("title, created_by_id, assigned_to_name, status, completion_comment")
       .eq("id", id)
       .single();
 
@@ -288,6 +291,41 @@ export default function TaskBoard({ entityId, profile, highlightId, onHighlightC
          });
        }
     }
+  };
+
+  const handleConfirmCompletion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!taskToComplete || !completionComment.trim()) return;
+
+    const id = taskToComplete.id;
+    const { data: taskData } = await supabase
+      .from("tasks")
+      .select("title, created_by_id, assigned_to_name, status")
+      .eq("id", id)
+      .single();
+
+    if (taskData?.status === "Completada" || taskData?.status === "Cancelada") return;
+
+    // Actualizamos con el comentario forzado
+    const { error } = await supabase.from("tasks").update({ 
+      status: "Completada", 
+      completion_comment: completionComment 
+    }).eq("id", id);
+
+    if (!error && taskData && taskData.created_by_id) {
+       const { data: { user } } = await supabase.auth.getUser();
+       if (user && user.id !== taskData.created_by_id) {
+         await createNotification({
+           user_id: taskData.created_by_id,
+           title: `Tarea Completada`,
+           message: `${taskData.assigned_to_name} ha finalizado la tarea "${taskData.title}". Comentario: "${completionComment}"`,
+           type: "task",
+           related_id: id
+         });
+       }
+    }
+    setTaskToComplete(null);
+    setCompletionComment("");
   };
 
   const counts = {
@@ -506,6 +544,17 @@ export default function TaskBoard({ entityId, profile, highlightId, onHighlightC
                     <p className="text-sm text-slate-600 mt-1 line-clamp-2">
                       {task.description}
                     </p>
+                    
+                    {task.status === "Completada" && task.completion_comment && (
+                      <div className="mt-3 bg-green-50/50 border border-green-100 p-3 rounded-lg flex items-start gap-2 shadow-inner">
+                        <span className="material-symbols-outlined text-green-500 text-sm mt-0.5">comment</span>
+                        <div>
+                           <p className="text-[10px] font-black uppercase text-green-600 tracking-widest mb-0.5">Nota de Cierre</p>
+                           <p className="text-xs text-slate-600 font-bold italic">{task.completion_comment}</p>
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="flex flex-wrap items-center gap-4 mt-3">
                       <div className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary rounded-md text-[10px] font-bold uppercase tracking-wider">
                         <span className="material-symbols-outlined text-sm">calendar_today</span>
@@ -540,7 +589,10 @@ export default function TaskBoard({ entityId, profile, highlightId, onHighlightC
                         )}
 
                         <button
-                          onClick={() => updateStatus(task.id, "Completada")}
+                          onClick={() => {
+                            setTaskToComplete(task);
+                            setCompletionComment("");
+                          }}
                           title="Marcar como completada"
                           className="flex-1 sm:flex-none p-2.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all active:scale-95"
                         >
@@ -675,9 +727,7 @@ export default function TaskBoard({ entityId, profile, highlightId, onHighlightC
                     }}
                   >
                     <option value="" disabled>Seleccionar...</option>
-                    {users
-                      .filter(u => u.role !== 'ADMINISTRATOR')
-                      .map(u => (
+                    {users.map(u => (
                         <option key={u.id} value={u.id}>
                           {u.full_name} ({u.role === 'ADMINISTRATOR' ? 'Adm' : 'Edi'})
                         </option>
@@ -702,6 +752,49 @@ export default function TaskBoard({ entityId, profile, highlightId, onHighlightC
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Comentario de Cierre */}
+      {taskToComplete && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[1100] animate-fade-in">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+             <div className="flex justify-center mb-4">
+                <div className="h-16 w-16 bg-green-50 text-green-500 rounded-full flex items-center justify-center border-4 border-green-100 shadow-sm">
+                   <span className="material-symbols-outlined text-3xl">task_alt</span>
+                </div>
+             </div>
+             <h3 className="text-xl font-black text-slate-800 text-center mb-1">Cerrar Tarea</h3>
+             <p className="text-xs text-slate-400 text-center font-bold mb-6">Añade un comentario sobre la finalización.</p>
+             
+             <form onSubmit={handleConfirmCompletion} className="space-y-4">
+                <div className="space-y-1">
+                   <label className="text-[10px] font-black tracking-widest uppercase text-slate-400 ml-1">Comentario *</label>
+                   <textarea 
+                      required
+                      placeholder="Ej. Enviado al cliente y aprobado..."
+                      className="w-full text-sm font-medium border border-slate-200 rounded-xl p-3 bg-slate-50 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all min-h-[90px] resize-none"
+                      value={completionComment}
+                      onChange={(e) => setCompletionComment(e.target.value)}
+                   />
+                </div>
+                <div className="flex gap-3 pt-2">
+                   <button 
+                      type="button" 
+                      onClick={() => setTaskToComplete(null)}
+                      className="flex-1 py-3 bg-slate-50 text-slate-500 font-bold rounded-xl hover:bg-slate-100 transition-colors uppercase tracking-widest text-[10px]"
+                   >
+                      Cancelar
+                   </button>
+                   <button 
+                      type="submit" 
+                      className="flex-1 py-3 bg-green-600 text-white font-black rounded-xl hover:bg-green-700 shadow-lg shadow-green-600/20 active:scale-95 transition-all uppercase tracking-widest text-[10px]"
+                   >
+                      Finalizar
+                   </button>
+                </div>
+             </form>
           </div>
         </div>
       )}
