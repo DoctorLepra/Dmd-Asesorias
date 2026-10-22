@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { normalizeClientRecord, ClientContact, ClientLicense } from '../../utils/colombiaData';
 
 interface ClientSidebarProps {
@@ -9,14 +9,52 @@ interface ClientSidebarProps {
   client: any;
   onRenovó: (
     clientId: string,
-    field: 'vencimiento_licencia' | 'vencimiento_poliza' | { type: 'license'; index: number }
-  ) => void;
+    field: 'vencimiento_licencia' | 'vencimiento_poliza' | { type: 'license'; index: number },
+    newDate: string
+  ) => Promise<void> | void;
 }
 
+type RenewalTarget =
+  | { type: 'licencia'; index: number }
+  | { type: 'poliza' };
+
 export default function ClientSidebar({ isOpen, onClose, client: rawClient, onRenovó }: ClientSidebarProps) {
+  const [renewalTarget, setRenewalTarget] = useState<RenewalTarget | null>(null);
+  const [newExpiryDate, setNewExpiryDate] = useState('');
+  const [submittingRenewal, setSubmittingRenewal] = useState(false);
+
   if (!isOpen || !rawClient) return null;
 
   const client = normalizeClientRecord(rawClient);
+
+  const openRenewalModal = (target: RenewalTarget) => {
+    setRenewalTarget(target);
+    setNewExpiryDate('');
+  };
+
+  const closeRenewalModal = () => {
+    if (submittingRenewal) return;
+    setRenewalTarget(null);
+    setNewExpiryDate('');
+  };
+
+  const handleConfirmRenewal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!renewalTarget || !newExpiryDate) return;
+
+    setSubmittingRenewal(true);
+    try {
+      if (renewalTarget.type === 'licencia') {
+        await onRenovó(client.id, { type: 'license', index: renewalTarget.index }, newExpiryDate);
+      } else {
+        await onRenovó(client.id, 'vencimiento_poliza', newExpiryDate);
+      }
+      setRenewalTarget(null);
+      setNewExpiryDate('');
+    } finally {
+      setSubmittingRenewal(false);
+    }
+  };
 
   const copyToClipboard = (text: string) => {
     if (!text) return;
@@ -214,10 +252,11 @@ export default function ClientSidebar({ isOpen, onClose, client: rawClient, onRe
                     </div>
                     {!lic.permanente && lic.vencimiento && (
                       <button
-                        onClick={() => onRenovó(client.id, { type: 'license', index: idx })}
+                        type="button"
+                        onClick={() => openRenewalModal({ type: 'licencia', index: idx })}
                         className="bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-600 text-[9px] font-black uppercase px-3 py-1.5 rounded-lg transition-all"
                       >
-                        Renovar (+1 Año)
+                        Renovar
                       </button>
                     )}
                   </div>
@@ -250,10 +289,11 @@ export default function ClientSidebar({ isOpen, onClose, client: rawClient, onRe
               </div>
               {client.vencimiento_poliza && (
                 <button
-                  onClick={() => onRenovó(client.id, 'vencimiento_poliza')}
+                  type="button"
+                  onClick={() => openRenewalModal({ type: 'poliza' })}
                   className="w-full bg-white hover:bg-slate-900 hover:text-white text-slate-600 text-[10px] font-black uppercase py-2.5 rounded-xl transition-all border border-slate-200 shadow-sm"
                 >
-                  Renovar Póliza (+1 Año)
+                  Renovar
                 </button>
               )}
             </div>
@@ -322,6 +362,66 @@ export default function ClientSidebar({ isOpen, onClose, client: rawClient, onRe
           </button>
         </div>
       </div>
+
+      {/* Modal de Confirmación de Renovación */}
+      {renewalTarget && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-fade-in"
+            onClick={closeRenewalModal}
+          ></div>
+
+          <form
+            onSubmit={handleConfirmRenewal}
+            className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-100 p-7 space-y-6 animate-in zoom-in-95 duration-200"
+          >
+            <div className="flex items-start gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-2xl">autorenew</span>
+              </div>
+              <div className="space-y-1.5">
+                <h4 className="text-lg font-black text-slate-800 leading-snug">
+                  ¿Estás seguro de renovar esta {renewalTarget.type === 'licencia' ? 'licencia' : 'póliza'}?
+                </h4>
+                <p className="text-xs font-medium text-slate-500 leading-relaxed">
+                  Al dar clic en aceptar se enviará un correo electrónico al contacto principal informándole su renovación.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                Indique la nueva fecha de vencimiento <span className="text-red-500">*</span>
+              </label>
+              <input
+                required
+                type="date"
+                value={newExpiryDate}
+                onChange={e => setNewExpiryDate(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 shadow-inner"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                disabled={submittingRenewal}
+                onClick={closeRenewalModal}
+                className="px-5 py-2.5 rounded-xl text-slate-500 font-bold hover:bg-slate-100 transition-all text-xs uppercase tracking-widest disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={submittingRenewal || !newExpiryDate}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-200 active:scale-95 disabled:opacity-50 text-xs uppercase tracking-widest"
+              >
+                {submittingRenewal ? 'Guardando...' : 'Aceptar'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

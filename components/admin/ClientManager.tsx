@@ -93,28 +93,28 @@ export default function ClientManager({ profile }: ClientManagerProps) {
 
   const handleRenovó = async (
     clientId: string,
-    field: 'vencimiento_licencia' | 'vencimiento_poliza' | { type: 'license'; index: number }
+    field: 'vencimiento_licencia' | 'vencimiento_poliza' | { type: 'license'; index: number },
+    newDate: string
   ) => {
     const client = clientes.find(c => c.id === clientId);
-    if (!client) return;
+    if (!client || !newDate) return;
 
     const updateData: any = {};
 
     if (typeof field === 'string') {
-      const currentDate = client[field] ? new Date(client[field]!) : new Date();
-      currentDate.setFullYear(currentDate.getFullYear() + 1);
-      updateData[field] = currentDate.toISOString().split('T')[0];
+      updateData[field] = newDate;
     } else if (field.type === 'license') {
       const newLicenses = [...client.licencias];
       const targetLicense = newLicenses[field.index];
-      const currentDate = targetLicense.vencimiento ? new Date(targetLicense.vencimiento) : new Date();
-      currentDate.setFullYear(currentDate.getFullYear() + 1);
       newLicenses[field.index] = {
         ...targetLicense,
         permanente: false,
-        vencimiento: currentDate.toISOString().split('T')[0],
+        vencimiento: newDate,
       };
       updateData.licencias = newLicenses;
+
+      const firstExpiring = newLicenses.find(l => !l.permanente && l.vencimiento);
+      updateData.vencimiento_licencia = firstExpiring ? firstExpiring.vencimiento : null;
     }
 
     const { error } = await supabase
@@ -123,7 +123,7 @@ export default function ClientManager({ profile }: ClientManagerProps) {
       .eq('id', clientId);
 
     if (!error) {
-      fetchClientes();
+      await fetchClientes();
     }
   };
 
