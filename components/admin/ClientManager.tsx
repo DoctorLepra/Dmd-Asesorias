@@ -95,11 +95,14 @@ export default function ClientManager({ profile }: ClientManagerProps) {
     clientId: string,
     field: 'vencimiento_licencia' | 'vencimiento_poliza' | { type: 'license'; index: number },
     newDate: string
-  ) => {
+  ): Promise<{ success: boolean; emailSent: boolean; emailError?: string }> => {
     const client = clientes.find(c => c.id === clientId);
-    if (!client || !newDate) return;
+    if (!client || !newDate) {
+      return { success: false, emailSent: false, emailError: 'Cliente o fecha no válidos.' };
+    }
 
     const updateData: any = {};
+    let licenseDetails: { sistema?: string; numero_licencia?: string; codigo_producto?: string } | undefined;
 
     if (typeof field === 'string') {
       updateData[field] = newDate;
@@ -113,6 +116,12 @@ export default function ClientManager({ profile }: ClientManagerProps) {
       };
       updateData.licencias = newLicenses;
 
+      licenseDetails = {
+        sistema: targetLicense?.sistema,
+        numero_licencia: targetLicense?.numero_licencia,
+        codigo_producto: targetLicense?.codigo_producto,
+      };
+
       const firstExpiring = newLicenses.find(l => !l.permanente && l.vencimiento);
       updateData.vencimiento_licencia = firstExpiring ? firstExpiring.vencimiento : null;
     }
@@ -122,8 +131,51 @@ export default function ClientManager({ profile }: ClientManagerProps) {
       .update(updateData)
       .eq('id', clientId);
 
-    if (!error) {
-      await fetchClientes();
+    if (error) {
+      return { success: false, emailSent: false, emailError: error.message };
+    }
+
+    await fetchClientes();
+
+    const primaryEmail = (client.contactos?.[0]?.correo || client.correo || '').trim();
+    if (!primaryEmail) {
+      return {
+        success: true,
+        emailSent: false,
+        emailError: 'La fecha se actualizó, pero el cliente no tiene correo electrónico registrado.',
+      };
+    }
+
+    try {
+      const emailRes = await fetch('/api/send-renewal-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: primaryEmail,
+          clientName: client.nombre,
+          identificacion: client.codigo,
+          renewalType: typeof field === 'object' && field.type === 'license' ? 'licencia' : 'poliza',
+          newExpiryDate: newDate,
+          licenseDetails,
+        }),
+      });
+
+      const emailData = await emailRes.json().catch(() => ({}));
+      if (!emailRes.ok) {
+        return {
+          success: true,
+          emailSent: false,
+          emailError: emailData?.error || 'La fecha se actualizó, pero hubo un error enviando el correo.',
+        };
+      }
+
+      return { success: true, emailSent: true };
+    } catch (err: any) {
+      return {
+        success: true,
+        emailSent: false,
+        emailError: err?.message || 'Error de conexión al intentar enviar el correo.',
+      };
     }
   };
 

@@ -11,7 +11,7 @@ interface ClientSidebarProps {
     clientId: string,
     field: 'vencimiento_licencia' | 'vencimiento_poliza' | { type: 'license'; index: number },
     newDate: string
-  ) => Promise<void> | void;
+  ) => Promise<{ success: boolean; emailSent: boolean; emailError?: string } | void> | void;
 }
 
 type RenewalTarget =
@@ -22,12 +22,14 @@ export default function ClientSidebar({ isOpen, onClose, client: rawClient, onRe
   const [renewalTarget, setRenewalTarget] = useState<RenewalTarget | null>(null);
   const [newExpiryDate, setNewExpiryDate] = useState('');
   const [submittingRenewal, setSubmittingRenewal] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'warning' | 'error'; text: string } | null>(null);
 
   if (!isOpen || !rawClient) return null;
 
   const client = normalizeClientRecord(rawClient);
 
   const openRenewalModal = (target: RenewalTarget) => {
+    setStatusMessage(null);
     setRenewalTarget(target);
     setNewExpiryDate('');
   };
@@ -44,10 +46,29 @@ export default function ClientSidebar({ isOpen, onClose, client: rawClient, onRe
 
     setSubmittingRenewal(true);
     try {
-      if (renewalTarget.type === 'licencia') {
-        await onRenovó(client.id, { type: 'license', index: renewalTarget.index }, newExpiryDate);
-      } else {
-        await onRenovó(client.id, 'vencimiento_poliza', newExpiryDate);
+      const res =
+        renewalTarget.type === 'licencia'
+          ? await onRenovó(client.id, { type: 'license', index: renewalTarget.index }, newExpiryDate)
+          : await onRenovó(client.id, 'vencimiento_poliza', newExpiryDate);
+
+      if (res && typeof res === 'object') {
+        if (!res.success) {
+          setStatusMessage({
+            type: 'error',
+            text: res.emailError || 'No se pudo actualizar la fecha de renovación.',
+          });
+        } else if (res.emailSent) {
+          const emailTarget = client.contactos?.[0]?.correo || client.correo;
+          setStatusMessage({
+            type: 'success',
+            text: `Renovación guardada y correo enviado a ${emailTarget}.`,
+          });
+        } else {
+          setStatusMessage({
+            type: 'warning',
+            text: res.emailError || 'Renovación guardada, pero no se pudo enviar el correo.',
+          });
+        }
       }
       setRenewalTarget(null);
       setNewExpiryDate('');
@@ -114,6 +135,36 @@ export default function ClientSidebar({ isOpen, onClose, client: rawClient, onRe
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-8 space-y-8 legal-scroll">
+          {statusMessage && (
+            <div
+              className={`p-4 rounded-2xl border text-xs font-bold flex items-center justify-between gap-3 animate-fade-in ${
+                statusMessage.type === 'success'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                  : statusMessage.type === 'warning'
+                  ? 'bg-amber-50 border-amber-200 text-amber-700'
+                  : 'bg-red-50 border-red-200 text-red-700'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-base">
+                  {statusMessage.type === 'success'
+                    ? 'mark_email_read'
+                    : statusMessage.type === 'warning'
+                    ? 'warning'
+                    : 'error'}
+                </span>
+                <span>{statusMessage.text}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStatusMessage(null)}
+                className="opacity-60 hover:opacity-100"
+              >
+                <span className="material-symbols-outlined text-sm">close</span>
+              </button>
+            </div>
+          )}
+
           {/* Ubicación Geográfica */}
           <section className="space-y-3">
             <div className="flex items-center gap-2">
